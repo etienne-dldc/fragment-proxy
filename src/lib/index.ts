@@ -1,4 +1,4 @@
-import { proxify, Path, createTracked, resolveTracked, Tracked } from './proxify';
+import { proxify, Path, resolveTracked } from './proxify';
 
 type FragmentOutput<Input, Output> = [Input] extends [void] ? () => Output : (input: Input) => Output;
 
@@ -38,67 +38,6 @@ export function createFragmentFactory<State extends object>(state: State) {
   }
 
   return fragment;
-}
-
-type Select<I, O, P> = (input: Trackable<I>, props: P) => O;
-
-type Trackable<Value> = {
-  value: Value;
-  track: Value;
-};
-
-function createTrackable<V>(value: V, basePath: string | null, paths: Array<Path>): Trackable<V> {
-  const initPath = basePath ? [basePath] : [];
-  return {
-    value,
-    track: proxify(value, initPath, paths),
-  };
-}
-
-export function createTrackFactory<State extends object>(state: State) {
-  const proxyState = proxify(state);
-
-  /*
-    var range = num => Array(num).fill(null).map((v, i) => i + 1);
-    var types = range(5).map(i => [
-      `  // prettier-ignore\n`,
-      `  function track<${range(i).map(j => `O${j}`).join(', ')}, Props = void>`,
-      `(name: string, ${range(i).map(j => `select${j}: Select<${j === 1 ? 'State' : `O${j-1}`}, O${j}, Props>`).join(', ')}): `,
-      `FragmentOutput<Props, O${i}>;`
-    ].join('')).join('\n');
-    copy(types);
-    console.log(types);
-  */
-
-  // prettier-ignore
-  function track<O1, Props = void>(name: string, select1: Select<State, O1, Props>): FragmentOutput<Props, O1>;
-  // prettier-ignore
-  function track<O1, O2, Props = void>(name: string, select1: Select<State, O1, Props>, select2: Select<O1, O2, Props>): FragmentOutput<Props, O2>;
-  // prettier-ignore
-  function track<O1, O2, O3, Props = void>(name: string, select1: Select<State, O1, Props>, select2: Select<O1, O2, Props>, select3: Select<O2, O3, Props>): FragmentOutput<Props, O3>;
-  // prettier-ignore
-  function track<O1, O2, O3, O4, Props = void>(name: string, select1: Select<State, O1, Props>, select2: Select<O1, O2, Props>, select3: Select<O2, O3, Props>, select4: Select<O3, O4, Props>): FragmentOutput<Props, O4>;
-  // prettier-ignore
-  function track<O1, O2, O3, O4, O5, Props = void>(name: string, select1: Select<State, O1, Props>, select2: Select<O1, O2, Props>, select3: Select<O2, O3, Props>, select4: Select<O3, O4, Props>, select5: Select<O4, O5, Props>): FragmentOutput<Props, O5>;
-
-  function track<Output, Props = void>(name: string, ...selects: Array<(prev: any, props: Props) => any>): Output {
-    return ((input: any) => {
-      console.log(`[FRAG] ${name} start`);
-      const result = selects.reduce<null | Tracked>((acc, select, index) => {
-        if (index === 0) {
-          return resolveTracked(select(createTrackable(proxyState, null, []), input));
-        }
-        const res = resolveTracked(select(createTrackable(acc.value, String(index), acc.paths), input));
-        return res;
-      }, null);
-      console.log(`[FRAG] ${name} result`, result);
-      const output = result.value;
-      console.log(`[FRAG] ${name} end`);
-      return createTracked(output, result.paths);
-    }) as any;
-  }
-
-  return track;
 }
 
 export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
