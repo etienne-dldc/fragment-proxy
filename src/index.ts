@@ -1,11 +1,38 @@
-import { createFragmentFactory, createTrackFactory, connect } from './lib';
-import { Post, PostComment, State, state } from './state';
-import { PATHS } from './lib/proxify';
+import { ConnectManager } from './lib';
+import { Post, PostComment, State, state as rawState } from './state';
+import { notNill } from './lib/utils';
 
-const fragment = createFragmentFactory<State>(state);
-const track = createTrackFactory<State>(state);
+const manager = new ConnectManager();
 
-console.log(state);
+const state = manager.track('state', rawState);
+
+const selectedPost = manager.fragment('selectedPost', () =>
+  notNill(state.posts.find(p => p.id === state.selectedPostId))
+);
+
+const selectedPostComments = manager.fragment('selectedPostComments', () => {
+  return selectedPost().comments.map(commentId => {
+    return notNill(state.comments.find(comment => comment.id === commentId));
+  });
+});
+
+const combined = manager.fragment('combined', () => {
+  return {
+    selected: selectedPostComments(),
+    key: Object.keys(state),
+  };
+});
+
+const result1 = manager.connect(
+  'result1',
+  {},
+  combined
+);
+
+console.log(result1);
+console.log(manager.logFragState([selectedPost, selectedPostComments, combined]));
+
+/*
 
 const postsFrag = fragment('postsFrag', state => state.posts);
 const postsLengthFrag = fragment('postsLengthFrag', state => state.posts.length, length => length + 5);
@@ -82,7 +109,6 @@ const result4 = connect(
 
 console.log(result4);
 
-/*
 
 type CommentProps = {
   comment: PostComment;
