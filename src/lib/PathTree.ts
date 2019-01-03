@@ -1,63 +1,78 @@
-type PathTree<Data> = Map<PathPart, PathTreeNode<Data>>;
+import { PathPart, Path } from './Path';
+import { notNill } from './utils';
 
-type PathTreeNode<Data> = {
-  data: Data;
-  paths: PathTree<Data>;
+export type PathTreeMap<Data> = Map<PathPart, PathTree<Data>>;
+
+export type PathTree<Data> = {
+  data: null | Data;
+  paths: PathTreeMap<Data>;
 };
 
-function create<Data>(data: Data): PathTreeNode<Data> {
+function create<Data>(rootData: Data): PathTree<Data> {
   return {
-    paths: new Map<PathPart, PathTreeNode<Data>>(),
-    data,
+    data: rootData,
+    paths: new Map(),
   };
 }
 
-// function merge<Data = void>(left: PathTree<Data>, right: PathTree<Data>): PathTree<Data> {
-// function merge<Data = void>(left: PathTree<Data>, right: PathTree<Data>): PathTree<Data> {
-//   const n = new PathTreeManager();
-//   left.toPaths().forEach(n.add);
-//   right.toPaths().forEach(n.add);
-//   return n;
-// }
-
-function addPath<Data>(tree: PathTree<Data>, path: Path, data: Data): void {
-  path.reduce<PathTree<Data>>((acc, key) => {
+function addPath<Data>(tree: PathTree<Data>, path: Path, data: Data | null) {
+  path.reduce<PathTreeMap<any>>((acc, key) => {
     if (!acc.has(key)) {
-      acc.set(key, { paths: new Map(), data });
+      acc.set(key, { paths: new Map(), data: null });
     }
     return notNill(acc.get(key)).paths;
-  }, tree);
+  }, tree.paths);
+  if (data !== null) {
+    const node = getNode(tree, path);
+    node.data = data;
+  }
 }
 
-function toPaths<Data>(tree: PathTree<Data>): Array<Path> {
-  const traverse = (map: PathTree<Data>): Array<Path> => {
+function getNode<Data>(tree: PathTree<Data>, path: Path): PathTree<Data> {
+  if (path.length === 0) {
+    return tree;
+  }
+  const parentPath = path.slice(0, -1);
+  const parent = parentPath.reduce<PathTreeMap<any>>((acc, key) => {
+    return notNill(notNill(acc.get(key)).paths);
+  }, tree.paths);
+  return notNill(parent.get(path[path.length - 1]));
+}
+
+function getData<Data>(tree: PathTree<Data>, path: Path): Data | null {
+  return getNode(tree, path).data;
+}
+
+function toPaths<Data>(tree: PathTree<Data>, filter: (data: Data | null) => boolean): Array<Path> {
+  const traverse = (map: PathTreeMap<Data>): Array<Path> => {
     return Array.from(map.entries())
       .map(([key, val]) => {
         const sub = traverse(val.paths);
-        if (sub.length === 0) {
-          return [[key]];
-        }
-        return sub.map(p => [key, ...p]);
+        const self = filter ? (filter(val.data) ? [[key]] : []) : [[key]];
+        return [...self, ...sub.map(p => [key, ...p])];
       })
       .reduce<Array<Path>>((acc, v) => {
         return acc.concat(v);
       }, []);
   };
-  return traverse(tree);
+  return traverse(tree.paths);
 }
 
-function toObject<Data>(tree: PathTree<Data>): object {
-  const toObj = (map: PathTree<Data>): object => {
+function toObject(tree: PathTree<any>): object {
+  const toObj = (map: PathTreeMap<any>): object => {
     return Array.from(map.entries()).reduce<object>((acc, [key, val]) => {
       (acc as any)[String(key)] = toObj(val.paths);
       return acc;
     }, {});
   };
-  return toObj(tree);
+  return toObj(tree.paths);
 }
 
 export const PathTree = {
+  create,
   addPath,
   toObject,
   toPaths,
+  getNode,
+  getData,
 };

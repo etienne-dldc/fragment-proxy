@@ -1,5 +1,5 @@
 import { ConnectManager } from './lib';
-import { Post, PostComment, State, state as rawState } from './state';
+import { state as rawState } from './state';
 import { notNill } from './lib/utils';
 
 const manager = new ConnectManager();
@@ -17,20 +17,32 @@ const selectedPostComments = manager.fragment('selectedPostComments', () => {
 });
 
 const combined = manager.fragment('combined', () => {
-  return {
+  const result = {
     selected: selectedPostComments(),
     key: Object.keys(state),
   };
+  return result;
+});
+
+const selectedFromCombined = manager.fragment('selectedFromCombined', () => {
+  return combined().selected;
+});
+
+const someString = manager.fragment('someString', () => {
+  const selected = selectedFromCombined();
+  if (selected.length === 0) {
+    return 'yolo';
+  }
+  return selected[0].id;
 });
 
 const result1 = manager.connect(
   'result1',
-  {},
-  combined
+  someString
 );
 
 console.log(result1);
-console.log(manager.logFragState([selectedPost, selectedPostComments, combined]));
+manager.logFragState();
 
 /*
 
