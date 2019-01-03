@@ -1,0 +1,18 @@
+{
+  "name": "parcel-sandbox",
+  "version": "1.0.0",
+  "description": "Simple Parcel Sandbox",
+  "main": "index.html",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html"
+  },
+  "dependencies": {
+    "is-plain-obj": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/is-plain-obj": "^1.1.0",
+    "parcel-bundler": "^1.6.1",
+    "typescript": "^3.2.2"
+  }
+}
