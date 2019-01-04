@@ -47,7 +47,10 @@ function toObject(layer: DepsLayer | null, fragmentsState: Map<FragmentAny, Frag
     main: PathTree.toPaths(layer.main, d => !!d).map(path => Path.stringify(path)),
     input: PathTree.toPaths(layer.input, d => !!d).map(path => Path.stringify(path)),
     frag: Array.from(layer.frag.entries()).reduce<any>((acc, [frag, deps]) => {
-      acc[notNill(fragmentsState.get(frag)).name] = PathTree.toPaths(deps, d => !!d).map(path => Path.stringify(path));
+      const paths = PathTree.toPaths(deps, d => !!d);
+      const name = notNill(fragmentsState.get(frag)).name;
+      console.log({ name, deps, paths });
+      acc[name] = paths.map(path => Path.stringify(path));
       return acc;
     }, {}),
   };

@@ -44,18 +44,27 @@ function getData<Data>(tree: PathTree<Data>, path: Path): Data | null {
 }
 
 function toPaths<Data>(tree: PathTree<Data>, filter: (data: Data | null) => boolean): Array<Path> {
-  const traverse = (map: PathTreeMap<Data>): Array<Path> => {
-    return Array.from(map.entries())
-      .map(([key, val]) => {
-        const sub = traverse(val.paths);
-        const self = filter ? (filter(val.data) ? [[key]] : []) : [[key]];
-        return [...self, ...sub.map(p => [key, ...p])];
+  const traverse = (node: PathTree<Data>, key: PathPart): Array<Path> => {
+    const self = filter ? (filter(node.data) ? [[key]] : []) : [[key]];
+    const sub = Array.from(node.paths.entries())
+      .map(([subKey, val]) => {
+        return traverse(val, subKey);
       })
       .reduce<Array<Path>>((acc, v) => {
         return acc.concat(v);
       }, []);
+    return [...self, ...sub.map(p => [key, ...p])];
+    // return Array.from(map.entries())
+    //   .map(([key, val]) => {
+    //     const sub = traverse(val.paths);
+    //     const self = filter ? (filter(val.data) ? [[key]] : []) : [[key]];
+    //     return [...self, ...sub.map(p => [key, ...p])];
+    //   })
+    //   .reduce<Array<Path>>((acc, v) => {
+    //     return acc.concat(v);
+    //   }, []);
   };
-  return traverse(tree.paths);
+  return traverse(tree, 'ROOT');
 }
 
 function toObject(tree: PathTree<any>): object {
