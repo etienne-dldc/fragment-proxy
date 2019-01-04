@@ -3,7 +3,7 @@ import { Path } from './Path';
 import { PathTree } from './PathTree';
 import { ROOT, PATH, IS_PROXY, VALUE } from './types';
 import { notNill } from './utils';
-import { Root, DepsLayer, ROOT_MAIN, ROOT_INPUT } from './DepsLayer';
+import { Root, DepsLayer, ROOT_GLOBAL, ROOT_INPUT } from './DepsLayer';
 
 export type PathWithRef = {
   [ROOT]: Root;
@@ -45,9 +45,13 @@ export class Proxyfier {
     return notNill(this.layers.pop());
   }
 
+  getLayersCount(): number {
+    return this.layers.length;
+  }
+
   private getPathTree(root: Root): PathTree<boolean> {
     const layer = this.getLayer();
-    if (root === ROOT_MAIN) {
+    if (root === ROOT_GLOBAL) {
       return layer.main;
     }
     if (root === ROOT_INPUT) {

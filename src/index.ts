@@ -33,7 +33,7 @@ const someString = manager.fragment('someString', () => {
   if (selected.length === 0) {
     return 'yolo';
   }
-  return selected[0].id;
+  return selected[0].id + combined().key[0];
 });
 
 const result1 = manager.connect(

@@ -3,10 +3,10 @@ import { Path } from './Path';
 import { PathTree } from './PathTree';
 import { notNill } from './utils';
 
-export const ROOT_MAIN = Symbol('ROOT_MAIN');
+export const ROOT_GLOBAL = Symbol('ROOT_MAIN');
 export const ROOT_INPUT = Symbol('ROOT_INPUT');
 
-export type Root = (typeof ROOT_MAIN) | (typeof ROOT_INPUT) | FragmentAny;
+export type Root = (typeof ROOT_GLOBAL) | (typeof ROOT_INPUT) | FragmentAny;
 
 export type DepsLayer = {
   main: PathTree<boolean>;
@@ -23,7 +23,7 @@ function create(): DepsLayer {
 }
 
 function getPathTree(layer: DepsLayer, root: Root): PathTree<boolean> {
-  if (root === ROOT_MAIN) {
+  if (root === ROOT_GLOBAL) {
     return layer.main;
   }
   if (root === ROOT_INPUT) {
@@ -49,7 +49,6 @@ function toObject(layer: DepsLayer | null, fragmentsState: Map<FragmentAny, Frag
     frag: Array.from(layer.frag.entries()).reduce<any>((acc, [frag, deps]) => {
       const paths = PathTree.toPaths(deps, d => !!d);
       const name = notNill(fragmentsState.get(frag)).name;
-      console.log({ name, deps, paths });
       acc[name] = paths.map(path => Path.stringify(path));
       return acc;
     }, {}),

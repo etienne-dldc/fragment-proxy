@@ -1,9 +1,9 @@
 import { Proxyfier } from './Proxyfier';
-import { notNill } from './utils';
+import { notNill, repeat } from './utils';
 import { PathTree } from './PathTree';
 import { PathPart, Path } from './Path';
 import { FragmentAny, Fragment, PATH, ROOT, FragmentState } from './types';
-import { DepsLayer, ROOT_MAIN, ROOT_INPUT } from './DepsLayer';
+import { DepsLayer, ROOT_GLOBAL, ROOT_INPUT } from './DepsLayer';
 import isPlainObj = require('is-plain-obj');
 
 export class ConnectManager {
@@ -64,7 +64,7 @@ export class ConnectManager {
   }
 
   track<T extends object | Array<any>>(name: PathPart, value: T): T {
-    return this.proxyfier.proxify(value, [name], ROOT_MAIN);
+    return this.proxyfier.proxify(value, [name], ROOT_GLOBAL);
   }
 
   // prettier-ignore
@@ -77,26 +77,18 @@ export class ConnectManager {
 
     const fragment: FragmentAny = ((input: any) => {
       this.proxyfier.pushLayer();
-      console.log(`[FRAG] ${name} start`);
+      const depth = repeat('>', this.proxyfier.getLayersCount());
+      console.log(`[FRAG] ${depth} ${name} start`);
       const result = select(input);
       const layer = this.proxyfier.popLayer();
-      // console.log('layer ' + name);
-      // console.log(layer);
-      
       const tracked = this.proxyfier.resolveTracked(result);
-      console.log('tracked ' + name);
-      console.log(tracked);
-      
       const returnedLayer = DepsLayer.create();
       tracked.paths.forEach(path => {
         DepsLayer.addPath(returnedLayer, path[ROOT], path[PATH]);
       });
       const output = tracked.value;
-
       this.setFragementInfos(fragment, layer, returnedLayer, tracked.shape);
-
-      console.log(`[FRAG] ${name} end`);
-      
+      console.log(`[FRAG] ${depth} ${name} end`);
       return this.proxyfier.proxify(output, [], fragment);
     }) as any;
 

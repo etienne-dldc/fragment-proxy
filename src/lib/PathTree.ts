@@ -54,15 +54,6 @@ function toPaths<Data>(tree: PathTree<Data>, filter: (data: Data | null) => bool
         return acc.concat(v);
       }, []);
     return [...self, ...sub.map(p => [key, ...p])];
-    // return Array.from(map.entries())
-    //   .map(([key, val]) => {
-    //     const sub = traverse(val.paths);
-    //     const self = filter ? (filter(val.data) ? [[key]] : []) : [[key]];
-    //     return [...self, ...sub.map(p => [key, ...p])];
-    //   })
-    //   .reduce<Array<Path>>((acc, v) => {
-    //     return acc.concat(v);
-    //   }, []);
   };
   return traverse(tree, 'ROOT');
 }
