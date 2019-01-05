@@ -1,17 +1,18 @@
 import isPlainObj from 'is-plain-obj';
 import { Path } from './Path';
 import { PathTree } from './PathTree';
-import { ROOT, PATH, IS_PROXY, VALUE } from './types';
+import { ROOT, PATH, IS_PROXY, VALUE, INPUT, InputRef, FragmentAny } from './types';
 import { notNill } from './utils';
-import { Root, DepsLayer, ROOT_GLOBAL, ROOT_INPUT } from './DepsLayer';
+import { Root, DepsLayer } from './DepsLayer';
 
-export type PathWithRef = {
+export type UnwrapedPath = {
   [ROOT]: Root;
   [PATH]: Path;
+  [INPUT]: InputRef;
 };
 
-export type Tracked = {
-  paths: Array<PathWithRef>;
+export type Unwraped = {
+  paths: Array<UnwrapedPath>;
   value: any;
   shape: any;
 };
@@ -37,8 +38,12 @@ export class Proxyfier {
     return this.layers[this.layers.length - 1];
   }
 
-  pushLayer() {
-    this.layers.push(DepsLayer.create());
+  getLastLayer(): DepsLayer | null {
+    return this.layers[this.layers.length - 1] || null;
+  }
+
+  pushLayer(name: string, self: any) {
+    this.layers.push(DepsLayer.create(name, self));
   }
 
   popLayer(): DepsLayer {
@@ -49,34 +54,26 @@ export class Proxyfier {
     return this.layers.length;
   }
 
-  private getPathTree(root: Root): PathTree<boolean> {
+  private getPathTree(root: Root, input: any): PathTree<boolean> {
     const layer = this.getLayer();
-    if (root === ROOT_GLOBAL) {
-      return layer.main;
-    }
-    if (root === ROOT_INPUT) {
-      return layer.input;
-    }
-    if (!layer.frag.has(root)) {
-      layer.frag.set(root, PathTree.create(false));
-    }
-    return notNill(layer.frag.get(root));
+    return DepsLayer.getPathTree(layer, root, input);
   }
 
-  private addPath(root: Root, path: Path) {
-    PathTree.addPath(this.getPathTree(root), path, true);
+  private addPath(root: Root, input: any, path: Path) {
+    PathTree.addPath(this.getPathTree(root, input), path, true);
   }
 
-  private createArrayProxy<T extends Array<any>>(value: T, path: Path, root: Root): T {
+  private createArrayProxy<T extends Array<any>>(value: T, root: Root, input: any, path: Path): T {
     const handlers: ProxyHandler<T> = {
       get: (target, prop) => {
         if (prop === IS_PROXY) return true;
         if (prop === PATH) return path;
         if (prop === ROOT) return root;
         if (prop === VALUE) return value;
+        if (prop === INPUT) return input;
 
         if (prop === 'length') {
-          this.addPath(root, path);
+          this.addPath(root, input, path);
           return target.length;
         }
 
@@ -90,16 +87,16 @@ export class Proxyfier {
           }
           if (prop === 'find') {
             return (finder: any) => {
-              this.addPath(root, path);
-              const mapped = target.map((v, i) => this.proxify(v, [...path, i], root));
+              this.addPath(root, input, path);
+              const mapped = target.map((v, i) => this.proxify(v, root, input, [...path, i]));
               return mapped.find(finder);
             };
           }
           if (prop === 'map') {
             return (mapper: any) => {
-              this.addPath(root, path);
+              this.addPath(root, input, path);
               return target.map((val, i, arr) => {
-                return mapper(this.proxify(val, [...path, i], root), i, this.proxify(arr, path, root));
+                return mapper(this.proxify(val, root, input, [...path, i]), i, this.proxify(arr, root, input, path));
               });
             };
           }
@@ -108,7 +105,7 @@ export class Proxyfier {
 
         const nestedPath = [...path, prop];
 
-        return this.proxify((target as any)[prop], nestedPath, root);
+        return this.proxify((target as any)[prop], root, input, nestedPath);
       },
       set: (target, prop, value) => {
         throw new Error(`Not allowed`);
@@ -118,13 +115,14 @@ export class Proxyfier {
     return new Proxy(value, handlers);
   }
 
-  private createObjectProxy<T extends object>(value: T, path: Path, root: Root): T {
+  private createObjectProxy<T extends object>(value: T, root: Root, input: any, path: Path): T {
     const handlers: ProxyHandler<T> = {
       get: (target, prop) => {
         if (prop === IS_PROXY) return true;
         if (prop === PATH) return path;
         if (prop === ROOT) return root;
         if (prop === VALUE) return value;
+        if (prop === INPUT) return input;
 
         if (typeof prop === 'symbol') {
           throw new Error(`Not allowed`);
@@ -147,7 +145,7 @@ export class Proxyfier {
           throw new Error(`function are not supportted`);
         }
 
-        return this.proxify(targetValue, nestedPath, root);
+        return this.proxify(targetValue, root, input, nestedPath);
       },
       set: (target, prop, value) => {
         throw new Error(`Not allowed`);
@@ -156,7 +154,7 @@ export class Proxyfier {
         throw new Error(`Not allowed`);
       },
       ownKeys: target => {
-        this.addPath(root, path);
+        this.addPath(root, input, path);
         return Reflect.ownKeys(target);
       },
     };
@@ -164,18 +162,18 @@ export class Proxyfier {
     return new Proxy(value, handlers);
   }
 
-  proxify<T extends any>(value: T, path: Path = [], root: Root): T {
+  proxify<T extends any>(value: T, root: Root, input: any, path: Path = []): T {
     if (value) {
       if (value[IS_PROXY]) {
         // re-proxy to set correct path & root
-        return this.proxify(value[VALUE], path, root);
+        return this.proxify(value[VALUE], root, input, path);
       } else if (isPlainObj(value)) {
-        return this.createObjectProxy(value as any, path, root);
+        return this.createObjectProxy(value as any, root, input, path);
       } else if (Array.isArray(value)) {
-        return this.createArrayProxy(value, path, root);
+        return this.createArrayProxy(value, root, input, path);
       }
     }
-    this.addPath(root, path);
+    this.addPath(root, input, path);
     return value;
   }
 
@@ -183,11 +181,19 @@ export class Proxyfier {
     return value && value[IS_PROXY];
   }
 
-  resolveTracked(value: any): Tracked {
+  unproxify<V extends any>(value: V): V {
     if (this.isProxy(value)) {
-      const shape = {
+      return value[VALUE];
+    }
+    return value;
+  }
+
+  unwrap(value: any): Unwraped {
+    if (this.isProxy(value)) {
+      const shape: UnwrapedPath = {
         [PATH]: value[PATH],
         [ROOT]: value[ROOT],
+        [INPUT]: value[INPUT],
       };
 
       return {
@@ -197,11 +203,11 @@ export class Proxyfier {
       };
     }
     if (isPlainObj(value)) {
-      const paths: Array<PathWithRef> = [];
+      const paths: Array<UnwrapedPath> = [];
       const resValue: { [key: string]: any } = {};
       const resShape: { [key: string]: any } = {};
       Object.keys(value).forEach(key => {
-        const res = this.resolveTracked(value[key]);
+        const res = this.unwrap(value[key]);
         paths.push(...res.paths);
         resValue[key] = res.value;
         resShape[key] = res.shape;
@@ -213,10 +219,10 @@ export class Proxyfier {
       };
     }
     if (Array.isArray(value)) {
-      const paths: Array<PathWithRef> = [];
+      const paths: Array<UnwrapedPath> = [];
       const resShape: Array<any> = [];
       const resValue = value.map(val => {
-        const res = this.resolveTracked(val);
+        const res = this.unwrap(val);
         paths.push(...res.paths);
         resShape.push(res.shape);
         return res.value;

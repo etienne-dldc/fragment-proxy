@@ -8,15 +8,24 @@ export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 
 export type MergeInOut<In, Out> = [In, Out] extends [object, object] ? Omit<In, keyof Out> & Out : Out;
 
+export type InputRef = any;
+
 export const IS_PROXY = Symbol('IS_PROXY');
 export const PATH = Symbol('PATHS');
 export const VALUE = Symbol('VALUE');
 export const ROOT = Symbol('ROOT');
+export const INPUT = Symbol('INPUT');
 
-export type FragmentState = {
-  dirty: boolean;
-  name: string;
+export type FragmentStateData = {
   used: DepsLayer | null;
   returned: DepsLayer | null;
   shape: any;
+  value: any;
+  input: any;
+};
+
+export type FragmentState = {
+  name: string;
+  dirty: boolean;
+  data: FragmentStateData;
 };

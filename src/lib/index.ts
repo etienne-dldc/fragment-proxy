@@ -1,1 +1,1 @@
-export { ConnectManager } from './ConnectManager';
+export { FramentsManager } from './FramentsManager';

@@ -1,42 +1,44 @@
-import { FragmentAny, ROOT, PATH, FragmentState } from './types';
+import { FragmentAny, ROOT, PATH, FragmentState, InputRef } from './types';
 import { Path } from './Path';
 import { PathTree } from './PathTree';
 import { notNill } from './utils';
 
-export const ROOT_GLOBAL = Symbol('ROOT_MAIN');
 export const ROOT_INPUT = Symbol('ROOT_INPUT');
 
-export type Root = (typeof ROOT_GLOBAL) | (typeof ROOT_INPUT) | FragmentAny;
+export type Root = (typeof ROOT_INPUT) | FragmentAny;
 
 export type DepsLayer = {
-  main: PathTree<boolean>;
+  name: string;
+  ref: any;
   input: PathTree<boolean>;
-  frag: Map<FragmentAny, PathTree<boolean>>;
+  frag: Map<FragmentAny, Map<InputRef, PathTree<boolean>>>;
 };
 
-function create(): DepsLayer {
+function create(name: string, ref: any): DepsLayer {
   return {
-    main: PathTree.create(false),
+    name,
+    ref,
     input: PathTree.create(false),
     frag: new Map(),
   };
 }
 
-function getPathTree(layer: DepsLayer, root: Root): PathTree<boolean> {
-  if (root === ROOT_GLOBAL) {
-    return layer.main;
-  }
+function getPathTree(layer: DepsLayer, root: Root, input: InputRef): PathTree<boolean> {
   if (root === ROOT_INPUT) {
     return layer.input;
   }
   if (!layer.frag.has(root)) {
-    layer.frag.set(root, PathTree.create(false));
+    layer.frag.set(root, new Map());
   }
-  return notNill(layer.frag.get(root));
+  const frag = notNill(layer.frag.get(root));
+  if (!frag.has(input)) {
+    frag.set(input, PathTree.create(false));
+  }
+  return notNill(frag.get(input));
 }
 
-function addPath(layer: DepsLayer, root: Root, path: Path) {
-  PathTree.addPath(getPathTree(layer, root), path, true);
+function addPath(layer: DepsLayer, root: Root, input: InputRef, path: Path) {
+  PathTree.addPath(getPathTree(layer, root, input), path, true);
 }
 
 function toObject(layer: DepsLayer | null, fragmentsState: Map<FragmentAny, FragmentState>): object | null {
@@ -44,12 +46,16 @@ function toObject(layer: DepsLayer | null, fragmentsState: Map<FragmentAny, Frag
     return null;
   }
   return {
-    main: PathTree.toPaths(layer.main, d => !!d).map(path => Path.stringify(path)),
     input: PathTree.toPaths(layer.input, d => !!d).map(path => Path.stringify(path)),
     frag: Array.from(layer.frag.entries()).reduce<any>((acc, [frag, deps]) => {
-      const paths = PathTree.toPaths(deps, d => !!d);
       const name = notNill(fragmentsState.get(frag)).name;
-      acc[name] = paths.map(path => Path.stringify(path));
+      const content = Array.from(deps.entries()).map(([input, tree]) => {
+        return {
+          input,
+          paths: PathTree.toPaths(tree, d => !!d).map(path => Path.stringify(path)),
+        };
+      });
+      acc[name] = content;
       return acc;
     }, {}),
   };
@@ -58,5 +64,6 @@ function toObject(layer: DepsLayer | null, fragmentsState: Map<FragmentAny, Frag
 export const DepsLayer = {
   create,
   addPath,
+  getPathTree,
   toObject,
 };

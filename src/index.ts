@@ -1,47 +1,66 @@
-import { ConnectManager } from './lib';
-import { state as rawState } from './state';
+import { FramentsManager } from './lib';
+import { state as rawState, State, Post, PostComment } from './state';
 import { notNill } from './lib/utils';
 
-const manager = new ConnectManager();
+const manager = new FramentsManager();
 
-const state = manager.track('state', rawState);
+type Fragment<Input, Output> = [Input] extends [void] ? () => Output : (input: Input) => Output;
 
-const selectedPost = manager.fragment('selectedPost', () =>
+type WithState<Input> = { state: State; input: Input };
+
+function fragment<Input, Output>(name: string, select: (data: WithState<Input>) => Output): Fragment<Input, Output> {
+  const frag = manager.fragment(name, select);
+  return ((input: Input) => frag({ state: rawState, input })) as any;
+}
+
+const selectedPost = fragment<void, Post>('selectedPost', ({ state }) =>
   notNill(state.posts.find(p => p.id === state.selectedPostId))
 );
 
-const selectedPostComments = manager.fragment('selectedPostComments', () => {
+const post = fragment<string, Post>('post', ({ state, input: postId }) => {
+  return notNill(state.posts.find(p => p.id === postId));
+});
+
+const selectedPostComments = fragment<void, Array<PostComment>>('selectedPostComments', ({ state }) => {
   return selectedPost().comments.map(commentId => {
     return notNill(state.comments.find(comment => comment.id === commentId));
   });
 });
 
-const combined = manager.fragment('combined', () => {
+const somePosts = fragment<void, { first: Post; second: Post; third: string }>('somePosts', () => ({
+  first: post('1'),
+  second: post('1'),
+  third: post('3').title,
+}));
+
+const combined = fragment<void, { selected: Array<PostComment>; keys: Array<string> }>('combined', ({ state }) => {
   const result = {
     selected: selectedPostComments(),
-    key: Object.keys(state),
+    keys: Object.keys(state),
   };
   return result;
 });
 
-const selectedFromCombined = manager.fragment('selectedFromCombined', () => {
+const selectedFromCombined = fragment<void, Array<PostComment>>('selectedFromCombined', () => {
   return combined().selected;
 });
 
-const someString = manager.fragment('someString', () => {
+const someString = fragment<void, string>('someString', () => {
   const selected = selectedFromCombined();
   if (selected.length === 0) {
     return 'yolo';
   }
-  return selected[0].id + combined().key[0];
+  return selected[0].id + combined().keys[0];
 });
 
-const result1 = manager.connect(
-  'result1',
-  someString
-);
+const resolveSomePosts = manager.createResolve('result1', somePosts);
 
-console.log(result1);
+console.log(resolveSomePosts());
+manager.logFragState();
+
+console.log('===========');
+
+console.log(resolveSomePosts());
 manager.logFragState();
 
 /*
