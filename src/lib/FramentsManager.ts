@@ -18,8 +18,6 @@ export class FramentsManager<State> {
   private resolver: Resolver | null = null;
   private state: State;
   private cache: Map<Resolver, ResolverCache> = new Map();
-  private currentCachePath: CachePath | null = null;
-  private siblingsCount: number = 0;
   private nextCache: ResolverCache | null = null;
 
   constructor(state: State) {
@@ -75,14 +73,6 @@ export class FramentsManager<State> {
       console.log('cache hit in ' + fragment.displayName);
       return cache.result;
     }
-    const siblingsCount = this.siblingsCount;
-    if (this.currentCachePath === null) {
-      this.currentCachePath = [];
-    } else {
-      notNill(this.currentCachePath).push(siblingsCount);
-    }
-    this.siblingsCount = 0;
-
     this.proxyfier.pushLayer(name, fragment, input);
     const path = [
       notNill(this.resolver),
@@ -111,11 +101,6 @@ export class FramentsManager<State> {
       used: usedLayer,
       shape: shape,
     });
-
-    if (notNill(this.currentCachePath).length > 0) {
-      notNill(this.currentCachePath).pop();
-    }
-    this.siblingsCount = siblingsCount + 1;
 
     return output;
   }
@@ -153,15 +138,12 @@ export class FramentsManager<State> {
     return (input: any) => {
       let result = {};
       if (fragment) {
-        this.currentCachePath = null;
-        this.siblingsCount = 0;
         this.resolver = ref;
         this.nextCache = new Map();
         result = fragment(input);
         this.cache.set(ref, this.nextCache);
         this.nextCache = null;
         this.resolver = null;
-        this.currentCachePath = null;
       }
       result = this.proxyfier.unwrap(result).value;
       return result;
