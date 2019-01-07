@@ -4,44 +4,41 @@ import { notNill } from './lib/utils';
 
 const manager = new FramentsManager<State>(rawState);
 
-const post = manager.fragment<string, Post>('post', ({ state, input: postId }) => {
+const post = manager.fragment('post', (state, postId: string) => {
   return notNill(state.posts.find(p => p.id === postId));
 });
 
-const selectedPost = manager.fragment<void, Post>('selectedPost', ({ state }) => post(state.selectedPostId));
+const selectedPost = manager.fragment('selectedPost', state => post(state.selectedPostId));
 
-const selectedPostComments = manager.fragment<void, Array<PostComment>>('selectedPostComments', ({ state }) => {
+const selectedPostComments = manager.fragment('selectedPostComments', state => {
   return selectedPost().comments.map(commentId => {
     return notNill(state.comments.find(comment => comment.id === commentId));
   });
 });
 
-const somePosts = manager.fragment<void, { first: Post; second: Post; third: string }>('somePosts', () => ({
+const somePosts = manager.fragment('somePosts', () => ({
   first: post('1'),
   second: post('2'),
   third: post('3').title,
 }));
 
-const combined = manager.fragment(
-  'combined',
-  ({ state, input }: { state: State; input: { first: string; second: string } }) => {
-    const result = {
-      selected: selectedPostComments(),
-      selectedBis: selectedPostComments(),
-      keys: Object.keys(state),
-      somePosts: somePosts(),
-      thePost: post(input.first),
-      theSecondPost: post(input.second),
-    };
-    return result;
-  }
-);
+const combined = manager.fragment('combined', (state, input: { first: string; second: string }) => {
+  const result = {
+    selected: selectedPostComments(),
+    selectedBis: selectedPostComments(),
+    keys: Object.keys(state),
+    somePosts: somePosts(),
+    thePost: post(input.first),
+    theSecondPost: post(input.second),
+  };
+  return result;
+});
 
-const selectedFromCombined = manager.fragment<void, Array<PostComment>>('selectedFromCombined', () => {
+const selectedFromCombined = manager.fragment('selectedFromCombined', () => {
   return combined({ first: '1', second: '2' }).selected;
 });
 
-const someString = manager.fragment<void, string>('someString', () => {
+const someString = manager.fragment('someString', () => {
   const selected = selectedFromCombined();
   if (selected.length === 0) {
     return 'yolo';

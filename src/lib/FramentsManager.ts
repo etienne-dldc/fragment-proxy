@@ -48,7 +48,7 @@ export class FramentsManager<State> {
       children: new Map(),
     };
     fragCacheMap.set(input, currentCacheMap);
-    const result = select({ state: this.state, input: proxyInput });
+    const result = select(this.state, proxyInput);
     const usedLayer = this.proxyfier.popLayer();
     const { value: output, shape, paths } = this.proxyfier.unwrap(result);
     const returnedLayer = TrackingLayer.create(name, fragment, input);
@@ -102,7 +102,7 @@ export class FramentsManager<State> {
   }
 
   // prettier-ignore
-  fragment<Input, Output>(name: string, select: FragmentCompute<State, Input, Output>): Fragment<Input, Output> {
+  fragment<Output, Input = void>(name: string, select: FragmentCompute<State, Input, Output>): Fragment<Input, Output> {
     const fragment: FragmentAny = ((input: any) => {
       return this.executeFragment(fragment, name, select, input);
     }) as any;

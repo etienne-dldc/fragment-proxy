@@ -1,7 +1,7 @@
 import { INPUT, STATE } from './const';
 import { TrackingLayer } from './TrackingLayer';
 
-export type FragmentCompute<State, Input, Output> = (ctx: { state: State; input: Input }) => Output;
+export type FragmentCompute<State, Input, Output> = (state: State, input: Input) => Output;
 
 export type Fragment<Input, Output> = ([Input] extends [void] ? () => Output : (input: Input) => Output) & {
   displayName: string;
