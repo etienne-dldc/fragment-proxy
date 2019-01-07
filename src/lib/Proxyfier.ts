@@ -6,9 +6,9 @@ import { notNill } from './utils';
 import { DepsLayer } from './DepsLayer';
 
 export type UnwrapedPath = {
-  [ROOT]: ProxyType;
-  [PATH]: Path;
-  [INPUT]: InputRef;
+  root: ProxyType;
+  path: Path;
+  input: InputRef;
 };
 
 export type Unwraped = {
@@ -195,9 +195,9 @@ export class Proxyfier {
   unwrap(value: any): Unwraped {
     if (this.isProxy(value)) {
       const shape: UnwrapedPath = {
-        [PATH]: value[PATH],
-        [ROOT]: value[ROOT],
-        [INPUT]: value[INPUT],
+        path: value[PATH],
+        root: value[ROOT],
+        input: value[INPUT],
       };
 
       return {

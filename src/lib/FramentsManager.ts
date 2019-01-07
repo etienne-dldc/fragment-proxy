@@ -102,7 +102,7 @@ export class FramentsManager<State> {
     const { value: output, shape, paths } = this.proxyfier.unwrap(result);
     const returnedLayer = DepsLayer.create(name, fragment, input);
     paths.forEach(path => {
-      DepsLayer.addPath(returnedLayer, path[ROOT], path[INPUT], path[PATH]);
+      DepsLayer.addPath(returnedLayer, path.root, path.input, path.path);
     });
 
     this.setCache(fragment, input, {
