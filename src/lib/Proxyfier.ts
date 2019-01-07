@@ -6,7 +6,7 @@ import { TrackingLayer } from './TrackingLayer';
 import { IS_PROXY, PATH, ROOT, VALUE, INPUT } from './const';
 
 export type UnwrapedPath = {
-  root: ProxyType;
+  type: ProxyType;
   path: Path;
   input: InputRef;
 };
@@ -58,13 +58,13 @@ export class Proxyfier {
     return this.layers.length;
   }
 
-  private getPathTree(root: ProxyType, input: any): PathTree<boolean> {
+  private getPathTree(type: ProxyType, input: any): PathTree<boolean> {
     const layer = this.getLayer();
-    return TrackingLayer.getPathTree(layer, root, input);
+    return TrackingLayer.getPathTree(layer, type, input);
   }
 
-  private addPath(root: ProxyType, input: any, path: Path) {
-    PathTree.addPath(this.getPathTree(root, input), path, true);
+  private addPath(type: ProxyType, input: any, path: Path) {
+    PathTree.addPath(this.getPathTree(type, input), path, true);
   }
 
   private createArrayProxy<T extends Array<any>>(value: T, type: ProxyType, input: any, path: Path): T {
@@ -119,12 +119,12 @@ export class Proxyfier {
     return new Proxy(value, handlers);
   }
 
-  private createObjectProxy<T extends object>(value: T, root: ProxyType, input: any, path: Path): T {
+  private createObjectProxy<T extends object>(value: T, type: ProxyType, input: any, path: Path): T {
     const handlers: ProxyHandler<T> = {
       get: (target, prop) => {
         if (prop === IS_PROXY) return true;
         if (prop === PATH) return path;
-        if (prop === ROOT) return root;
+        if (prop === ROOT) return type;
         if (prop === VALUE) return value;
         if (prop === INPUT) return input;
 
@@ -149,7 +149,7 @@ export class Proxyfier {
           throw new Error(`function are not supportted`);
         }
 
-        return this.proxify(targetValue, root, input, nestedPath);
+        return this.proxify(targetValue, type, input, nestedPath);
       },
       set: (target, prop, value) => {
         throw new Error(`Not allowed`);
@@ -158,7 +158,7 @@ export class Proxyfier {
         throw new Error(`Not allowed`);
       },
       ownKeys: target => {
-        this.addPath(root, input, path);
+        this.addPath(type, input, path);
         return Reflect.ownKeys(target);
       },
     };
@@ -169,7 +169,7 @@ export class Proxyfier {
   proxify<T extends any>(value: T, type: ProxyType, input: any, path: Path = []): T {
     if (value) {
       if (value[IS_PROXY]) {
-        // re-proxy to set correct path & root
+        // re-proxy to set correct type & path
         return this.proxify(value[VALUE], type, input, path);
       } else if (isPlainObj(value)) {
         return this.createObjectProxy(value as any, type, input, path);
@@ -196,7 +196,7 @@ export class Proxyfier {
     if (this.isProxy(value)) {
       const shape: UnwrapedPath = {
         path: value[PATH],
-        root: value[ROOT],
+        type: value[ROOT],
         input: value[INPUT],
       };
 

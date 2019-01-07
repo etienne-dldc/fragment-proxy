@@ -53,7 +53,7 @@ export class FramentsManager<State> {
     const { value: output, shape, paths } = this.proxyfier.unwrap(result);
     const returnedLayer = TrackingLayer.create(name, fragment, input);
     paths.forEach(path => {
-      TrackingLayer.addPath(returnedLayer, path.root, path.input, path.path);
+      TrackingLayer.addPath(returnedLayer, path.type, path.input, path.path);
     });
 
     this.setCache(fragment, input, {

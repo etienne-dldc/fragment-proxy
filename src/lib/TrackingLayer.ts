@@ -27,25 +27,25 @@ function create(name: string, fragment: FragmentAny, input: any): TrackingLayer 
   };
 }
 
-function getPathTree(layer: TrackingLayer, root: ProxyType, input: InputRef): PathTree<boolean> {
-  if (root === INPUT) {
+function getPathTree(layer: TrackingLayer, type: ProxyType, input: InputRef): PathTree<boolean> {
+  if (type === INPUT) {
     return layer.trees.input;
   }
-  if (root === STATE) {
+  if (type === STATE) {
     return layer.trees.state;
   }
-  if (!layer.trees.fragments.has(root)) {
-    layer.trees.fragments.set(root, new Map());
+  if (!layer.trees.fragments.has(type)) {
+    layer.trees.fragments.set(type, new Map());
   }
-  const frag = notNill(layer.trees.fragments.get(root));
+  const frag = notNill(layer.trees.fragments.get(type));
   if (!frag.has(input)) {
     frag.set(input, PathTree.create(false));
   }
   return notNill(frag.get(input));
 }
 
-function addPath(layer: TrackingLayer, root: ProxyType, input: InputRef, path: Path) {
-  PathTree.addPath(getPathTree(layer, root, input), path, true);
+function addPath(layer: TrackingLayer, type: ProxyType, input: InputRef, path: Path) {
+  PathTree.addPath(getPathTree(layer, type, input), path, true);
 }
 
 export const TrackingLayer = {
