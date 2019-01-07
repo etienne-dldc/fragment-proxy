@@ -47,14 +47,18 @@ const someString = manager.fragment('someString', () => {
 });
 
 const resolveStuff = manager.createResolve('resolveStuff', combined);
+const resolveSomeStr = manager.createResolve('resolveSomeStr', someString);
 
-const result = resolveStuff({ first: '6', second: '7' });
+// const result = resolveStuff({ first: '6', second: '7' });
 
-console.log(result);
+// console.log(result);
+console.log(resolveStuff({ first: '6', second: '7' }));
+console.log(resolveSomeStr());
 
 console.log('===========');
 
 console.log(resolveStuff({ first: '5', second: '6' }));
+console.log(resolveSomeStr());
 
 console.log(manager);
 

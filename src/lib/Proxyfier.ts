@@ -177,7 +177,9 @@ export class Proxyfier {
         return this.createArrayProxy(value, type, input, path);
       }
     }
-    this.addPath(type, input, path);
+    if (this.layers.length > 0) {
+      this.addPath(type, input, path);
+    }
     return value;
   }
 
