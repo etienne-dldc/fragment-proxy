@@ -1,12 +1,12 @@
 import isPlainObj from 'is-plain-obj';
 import { Path } from './Path';
 import { PathTree } from './PathTree';
-import { ROOT, PATH, IS_PROXY, VALUE, INPUT, InputRef, FragmentAny } from './types';
+import { ROOT, PATH, IS_PROXY, VALUE, INPUT, InputRef, ProxyType, FragmentAny } from './types';
 import { notNill } from './utils';
-import { Root, DepsLayer } from './DepsLayer';
+import { DepsLayer } from './DepsLayer';
 
 export type UnwrapedPath = {
-  [ROOT]: Root;
+  [ROOT]: ProxyType;
   [PATH]: Path;
   [INPUT]: InputRef;
 };
@@ -38,12 +38,16 @@ export class Proxyfier {
     return this.layers[this.layers.length - 1];
   }
 
+  getLayerPath(): Array<{ fragment: FragmentAny; input: any }> {
+    return this.layers.map(layer => ({ fragment: layer.fragment, input: layer.input }));
+  }
+
   getLastLayer(): DepsLayer | null {
     return this.layers[this.layers.length - 1] || null;
   }
 
-  pushLayer(name: string, self: any) {
-    this.layers.push(DepsLayer.create(name, self));
+  pushLayer(name: string, fragment: FragmentAny, input: any) {
+    this.layers.push(DepsLayer.create(name, fragment, input));
   }
 
   popLayer(): DepsLayer {
@@ -54,26 +58,26 @@ export class Proxyfier {
     return this.layers.length;
   }
 
-  private getPathTree(root: Root, input: any): PathTree<boolean> {
+  private getPathTree(root: ProxyType, input: any): PathTree<boolean> {
     const layer = this.getLayer();
     return DepsLayer.getPathTree(layer, root, input);
   }
 
-  private addPath(root: Root, input: any, path: Path) {
+  private addPath(root: ProxyType, input: any, path: Path) {
     PathTree.addPath(this.getPathTree(root, input), path, true);
   }
 
-  private createArrayProxy<T extends Array<any>>(value: T, root: Root, input: any, path: Path): T {
+  private createArrayProxy<T extends Array<any>>(value: T, type: ProxyType, input: any, path: Path): T {
     const handlers: ProxyHandler<T> = {
       get: (target, prop) => {
         if (prop === IS_PROXY) return true;
         if (prop === PATH) return path;
-        if (prop === ROOT) return root;
+        if (prop === ROOT) return type;
         if (prop === VALUE) return value;
         if (prop === INPUT) return input;
 
         if (prop === 'length') {
-          this.addPath(root, input, path);
+          this.addPath(type, input, path);
           return target.length;
         }
 
@@ -87,16 +91,16 @@ export class Proxyfier {
           }
           if (prop === 'find') {
             return (finder: any) => {
-              this.addPath(root, input, path);
-              const mapped = target.map((v, i) => this.proxify(v, root, input, [...path, i]));
+              this.addPath(type, input, path);
+              const mapped = target.map((v, i) => this.proxify(v, type, input, [...path, i]));
               return mapped.find(finder);
             };
           }
           if (prop === 'map') {
             return (mapper: any) => {
-              this.addPath(root, input, path);
+              this.addPath(type, input, path);
               return target.map((val, i, arr) => {
-                return mapper(this.proxify(val, root, input, [...path, i]), i, this.proxify(arr, root, input, path));
+                return mapper(this.proxify(val, type, input, [...path, i]), i, this.proxify(arr, type, input, path));
               });
             };
           }
@@ -105,7 +109,7 @@ export class Proxyfier {
 
         const nestedPath = [...path, prop];
 
-        return this.proxify((target as any)[prop], root, input, nestedPath);
+        return this.proxify((target as any)[prop], type, input, nestedPath);
       },
       set: (target, prop, value) => {
         throw new Error(`Not allowed`);
@@ -115,7 +119,7 @@ export class Proxyfier {
     return new Proxy(value, handlers);
   }
 
-  private createObjectProxy<T extends object>(value: T, root: Root, input: any, path: Path): T {
+  private createObjectProxy<T extends object>(value: T, root: ProxyType, input: any, path: Path): T {
     const handlers: ProxyHandler<T> = {
       get: (target, prop) => {
         if (prop === IS_PROXY) return true;
@@ -162,18 +166,18 @@ export class Proxyfier {
     return new Proxy(value, handlers);
   }
 
-  proxify<T extends any>(value: T, root: Root, input: any, path: Path = []): T {
+  proxify<T extends any>(value: T, type: ProxyType, input: any, path: Path = []): T {
     if (value) {
       if (value[IS_PROXY]) {
         // re-proxy to set correct path & root
-        return this.proxify(value[VALUE], root, input, path);
+        return this.proxify(value[VALUE], type, input, path);
       } else if (isPlainObj(value)) {
-        return this.createObjectProxy(value as any, root, input, path);
+        return this.createObjectProxy(value as any, type, input, path);
       } else if (Array.isArray(value)) {
-        return this.createArrayProxy(value, root, input, path);
+        return this.createArrayProxy(value, type, input, path);
       }
     }
-    this.addPath(root, input, path);
+    this.addPath(type, input, path);
     return value;
   }
 

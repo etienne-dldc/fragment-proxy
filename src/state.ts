@@ -76,6 +76,21 @@ const posts: Array<Post> = [
     title: 'Post 4',
     comments: getRandomComments(),
   },
+  {
+    id: '5',
+    title: 'Post 5',
+    comments: getRandomComments(),
+  },
+  {
+    id: '6',
+    title: 'Post 6',
+    comments: getRandomComments(),
+  },
+  {
+    id: '7',
+    title: 'Post 7',
+    comments: getRandomComments(),
+  },
 ];
 
 export const state: State = {
