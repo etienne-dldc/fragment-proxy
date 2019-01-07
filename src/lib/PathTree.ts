@@ -1,5 +1,5 @@
-import { PathPart, Path } from './Path';
 import { notNill } from './utils';
+import { Path, PathPart } from './types';
 
 export type PathTreeMap<Data> = Map<PathPart, PathTree<Data>>;
 

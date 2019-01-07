@@ -1,3 +1,6 @@
+import { INPUT, STATE } from './const';
+import { TrackingLayer } from './TrackingLayer';
+
 export type FragmentCompute<State, Input, Output> = (ctx: { state: State; input: Input }) => Output;
 
 export type Fragment<Input, Output> = ([Input] extends [void] ? () => Output : (input: Input) => Output) & {
@@ -12,11 +15,20 @@ export type MergeInOut<In, Out> = [In, Out] extends [object, object] ? Omit<In, 
 
 export type InputRef = any;
 
-export const IS_PROXY = Symbol('IS_PROXY');
-export const PATH = Symbol('PATHS');
-export const VALUE = Symbol('VALUE');
-export const ROOT = Symbol('ROOT');
-export const INPUT = Symbol('INPUT');
-export const STATE = Symbol('STATE');
-
 export type ProxyType = (typeof INPUT) | (typeof STATE) | FragmentAny;
+
+export type PathPart = string | number | symbol;
+
+export type Path = Array<PathPart>;
+
+export type Resolver = symbol;
+
+export type CacheData = { result: any; shape: any; used: TrackingLayer; returned: TrackingLayer; cacheMap: CacheTree };
+
+export type CacheItem = { data: CacheData; resolvers: Set<Resolver> };
+
+export type Cache<Data> = Map<FragmentAny, Map<InputRef, Data>>;
+
+export type CacheTree = {
+  children: Cache<CacheTree>;
+};

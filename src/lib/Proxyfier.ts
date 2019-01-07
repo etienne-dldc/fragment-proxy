@@ -1,9 +1,9 @@
 import isPlainObj from 'is-plain-obj';
-import { Path } from './Path';
 import { PathTree } from './PathTree';
-import { ROOT, PATH, IS_PROXY, VALUE, INPUT, InputRef, ProxyType, FragmentAny } from './types';
+import { InputRef, ProxyType, FragmentAny, Path } from './types';
 import { notNill } from './utils';
-import { DepsLayer } from './DepsLayer';
+import { TrackingLayer } from './TrackingLayer';
+import { IS_PROXY, PATH, ROOT, VALUE, INPUT } from './const';
 
 export type UnwrapedPath = {
   root: ProxyType;
@@ -29,9 +29,9 @@ const ARRAY_MUTATION_METHODS_NAMES = new Set([
 ]);
 
 export class Proxyfier {
-  private layers: Array<DepsLayer> = [];
+  private layers: Array<TrackingLayer> = [];
 
-  private getLayer(): DepsLayer {
+  private getLayer(): TrackingLayer {
     if (this.layers.length === 0) {
       throw new Error('No layers ?');
     }
@@ -42,15 +42,15 @@ export class Proxyfier {
     return this.layers.map(layer => ({ fragment: layer.fragment, input: layer.input }));
   }
 
-  getLastLayer(): DepsLayer | null {
+  getLastLayer(): TrackingLayer | null {
     return this.layers[this.layers.length - 1] || null;
   }
 
   pushLayer(name: string, fragment: FragmentAny, input: any) {
-    this.layers.push(DepsLayer.create(name, fragment, input));
+    this.layers.push(TrackingLayer.create(name, fragment, input));
   }
 
-  popLayer(): DepsLayer {
+  popLayer(): TrackingLayer {
     return notNill(this.layers.pop());
   }
 
@@ -60,7 +60,7 @@ export class Proxyfier {
 
   private getPathTree(root: ProxyType, input: any): PathTree<boolean> {
     const layer = this.getLayer();
-    return DepsLayer.getPathTree(layer, root, input);
+    return TrackingLayer.getPathTree(layer, root, input);
   }
 
   private addPath(root: ProxyType, input: any, path: Path) {

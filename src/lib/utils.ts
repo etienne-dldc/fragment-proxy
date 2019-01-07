@@ -5,23 +5,6 @@ export function notNill<T>(val: T | null | undefined): T {
   return val;
 }
 
-export const range = (num: number) =>
-  Array(num)
-    .fill(null)
-    .map((v, i) => i);
-
-export const repeat = (char: string, count: number) =>
-  range(count)
-    .map(() => char)
-    .join('');
-
-export function arrayShallowEqual(left: Array<any>, right: Array<any>): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-  return left.every((v, i) => v === right[i]);
-}
-
 export function getOrSet<M extends Map<any, any>>(
   map: M,
   key: M extends Map<infer K, any> ? K : never,

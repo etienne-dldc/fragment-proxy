@@ -1,9 +1,9 @@
-import { FragmentAny, InputRef, ProxyType, INPUT, STATE } from './types';
-import { Path } from './Path';
+import { FragmentAny, InputRef, ProxyType, Path } from './types';
 import { PathTree } from './PathTree';
 import { notNill } from './utils';
+import { INPUT, STATE } from './const';
 
-export type DepsLayer = {
+export type TrackingLayer = {
   name: string;
   fragment: FragmentAny;
   input: any;
@@ -14,7 +14,7 @@ export type DepsLayer = {
   };
 };
 
-function create(name: string, fragment: FragmentAny, input: any): DepsLayer {
+function create(name: string, fragment: FragmentAny, input: any): TrackingLayer {
   return {
     name,
     fragment,
@@ -27,7 +27,7 @@ function create(name: string, fragment: FragmentAny, input: any): DepsLayer {
   };
 }
 
-function getPathTree(layer: DepsLayer, root: ProxyType, input: InputRef): PathTree<boolean> {
+function getPathTree(layer: TrackingLayer, root: ProxyType, input: InputRef): PathTree<boolean> {
   if (root === INPUT) {
     return layer.trees.input;
   }
@@ -44,11 +44,11 @@ function getPathTree(layer: DepsLayer, root: ProxyType, input: InputRef): PathTr
   return notNill(frag.get(input));
 }
 
-function addPath(layer: DepsLayer, root: ProxyType, input: InputRef, path: Path) {
+function addPath(layer: TrackingLayer, root: ProxyType, input: InputRef, path: Path) {
   PathTree.addPath(getPathTree(layer, root, input), path, true);
 }
 
-export const DepsLayer = {
+export const TrackingLayer = {
   create,
   addPath,
   getPathTree,

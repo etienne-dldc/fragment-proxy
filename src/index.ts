@@ -22,22 +22,23 @@ const somePosts = manager.fragment<void, { first: Post; second: Post; third: str
   third: post('3').title,
 }));
 
-const combined = manager.fragment<string, { selected: Array<PostComment>; keys: Array<string> }>(
+const combined = manager.fragment(
   'combined',
-  ({ state, input: postId }) => {
+  ({ state, input }: { state: State; input: { first: string; second: string } }) => {
     const result = {
       selected: selectedPostComments(),
       selectedBis: selectedPostComments(),
       keys: Object.keys(state),
       somePosts: somePosts(),
-      thePost: post(postId),
+      thePost: post(input.first),
+      theSecondPost: post(input.second),
     };
     return result;
   }
 );
 
 const selectedFromCombined = manager.fragment<void, Array<PostComment>>('selectedFromCombined', () => {
-  return combined('1').selected;
+  return combined({ first: '1', second: '2' }).selected;
 });
 
 const someString = manager.fragment<void, string>('someString', () => {
@@ -45,16 +46,18 @@ const someString = manager.fragment<void, string>('someString', () => {
   if (selected.length === 0) {
     return 'yolo';
   }
-  return selected[0].id + combined('1').keys[0];
+  return selected[0].id + combined({ first: '1', second: '2' }).keys[0];
 });
 
 const resolveStuff = manager.createResolve('resolveStuff', combined);
 
-console.log(resolveStuff('6'));
+const result = resolveStuff({ first: '6', second: '7' });
+
+console.log(result);
 
 console.log('===========');
 
-console.log(resolveStuff('7'));
+console.log(resolveStuff({ first: '5', second: '6' }));
 
 console.log(manager);
 
