@@ -60,6 +60,14 @@ console.log('===========');
 console.log(resolveStuff({ first: '5', second: '6' }));
 console.log(resolveSomeStr());
 
+manager.mutate(state => {
+  state.posts.push({
+    title: 'Yolo',
+    id: 'new',
+    comments: [],
+  });
+});
+
 console.log(manager);
 
 /*

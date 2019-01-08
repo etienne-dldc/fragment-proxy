@@ -8,6 +8,7 @@
     "build": "parcel build index.html"
   },
   "dependencies": {
+    "immer": "^1.10.0",
     "is-plain-obj": "^1.1.0"
   },
   "devDependencies": {

@@ -3,16 +3,19 @@ import { FragmentAny, Fragment, FragmentCompute, InputRef, CacheItem, CacheTree,
 import { notNill, getOrSet } from './utils';
 import { TrackingLayer } from './TrackingLayer';
 import { STATE, INPUT } from './const';
+import produce from 'immer';
 
 export class FramentsManager<State> {
   private trackingProxyfier = new TrackingProxyfier();
-  private state: State;
+  private proxyState: State;
+  private rawState: State;
   private cache: Cache<CacheItem> = new Map();
   private cacheMapPath: Array<{ frag: FragmentAny; input: any }> = [];
   private nextCacheMap: CacheTree | null = null;
 
   constructor(state: State) {
-    this.state = this.trackingProxyfier.proxify(state, STATE, null);
+    this.rawState = state;
+    this.proxyState = this.trackingProxyfier.proxify(state, STATE, null);
   }
 
   private setCache(fragment: FragmentAny, input: InputRef, data: CacheData) {
@@ -48,7 +51,7 @@ export class FramentsManager<State> {
       children: new Map(),
     };
     fragCacheMap.set(input, currentCacheMap);
-    const result = select(this.state, proxyInput);
+    const result = select(this.proxyState, proxyInput);
     const usedLayer = this.trackingProxyfier.popLayer();
     const { value: output, shape, paths } = this.trackingProxyfier.unwrap(result);
     const returnedLayer = TrackingLayer.create(name, fragment, input);
@@ -97,8 +100,11 @@ export class FramentsManager<State> {
     return this.trackingProxyfier.proxify(output, fragment, input);
   }
 
-  setState(state: State): void {
-    this.state = this.trackingProxyfier.proxify(state, STATE, null);
+  mutate(mutation: (state: State) => void) {
+    const newState = produce(this.rawState, mutation, (mutations, inverseMutations) => {
+      console.log({ mutations, inverseMutations });
+    });
+    console.log(newState, this.rawState);
   }
 
   // prettier-ignore
