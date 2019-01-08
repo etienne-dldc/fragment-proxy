@@ -28,7 +28,7 @@ const ARRAY_MUTATION_METHODS_NAMES = new Set([
   'copyWithin',
 ]);
 
-export class Proxyfier {
+export class TrackingProxyfier {
   private layers: Array<TrackingLayer> = [];
 
   private getLayer(): TrackingLayer {
@@ -104,7 +104,7 @@ export class Proxyfier {
               });
             };
           }
-          throw new Error(`Not supported methof ${prop}`);
+          throw new Error(`Not supported method ${prop}`);
         }
 
         const nestedPath = [...path, prop];

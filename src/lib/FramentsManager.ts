@@ -1,18 +1,18 @@
-import { Proxyfier } from './Proxyfier';
+import { TrackingProxyfier } from './TrackingProxyfier';
 import { FragmentAny, Fragment, FragmentCompute, InputRef, CacheItem, CacheTree, Cache, CacheData } from './types';
 import { notNill, getOrSet } from './utils';
 import { TrackingLayer } from './TrackingLayer';
 import { STATE, INPUT } from './const';
 
 export class FramentsManager<State> {
-  private proxyfier = new Proxyfier();
+  private trackingProxyfier = new TrackingProxyfier();
   private state: State;
   private cache: Cache<CacheItem> = new Map();
   private cacheMapPath: Array<{ frag: FragmentAny; input: any }> = [];
   private nextCacheMap: CacheTree | null = null;
 
   constructor(state: State) {
-    this.state = this.proxyfier.proxify(state, STATE, null);
+    this.state = this.trackingProxyfier.proxify(state, STATE, null);
   }
 
   private setCache(fragment: FragmentAny, input: InputRef, data: CacheData) {
@@ -40,8 +40,8 @@ export class FramentsManager<State> {
     input: any,
     parentCacheMap: CacheTree
   ): any {
-    this.proxyfier.pushLayer(name, fragment, input);
-    const proxyInput = this.proxyfier.proxify(input, INPUT, null);
+    this.trackingProxyfier.pushLayer(name, fragment, input);
+    const proxyInput = this.trackingProxyfier.proxify(input, INPUT, null);
 
     const fragCacheMap = getOrSet(parentCacheMap.children, fragment, new Map());
     const currentCacheMap = {
@@ -49,8 +49,8 @@ export class FramentsManager<State> {
     };
     fragCacheMap.set(input, currentCacheMap);
     const result = select(this.state, proxyInput);
-    const usedLayer = this.proxyfier.popLayer();
-    const { value: output, shape, paths } = this.proxyfier.unwrap(result);
+    const usedLayer = this.trackingProxyfier.popLayer();
+    const { value: output, shape, paths } = this.trackingProxyfier.unwrap(result);
     const returnedLayer = TrackingLayer.create(name, fragment, input);
     paths.forEach(path => {
       TrackingLayer.addPath(returnedLayer, path.type, path.input, path.path);
@@ -94,11 +94,11 @@ export class FramentsManager<State> {
     this.cacheMapPath.push({ frag: fragment, input });
     const output = this.getFragmentResult(fragment, name, select, input);
     this.cacheMapPath.pop();
-    return this.proxyfier.proxify(output, fragment, input);
+    return this.trackingProxyfier.proxify(output, fragment, input);
   }
 
   setState(state: State): void {
-    this.state = this.proxyfier.proxify(state, STATE, null);
+    this.state = this.trackingProxyfier.proxify(state, STATE, null);
   }
 
   // prettier-ignore
@@ -152,7 +152,7 @@ export class FramentsManager<State> {
         }
       });
 
-      return this.proxyfier.unwrap(result).value;
+      return this.trackingProxyfier.unwrap(result).value;
     };
   }
 }
