@@ -8,12 +8,22 @@
     "build": "parcel build index.html"
   },
   "dependencies": {
-    "immer": "^1.10.0",
-    "is-plain-obj": "^1.1.0"
+    "immer": "^3.2.0",
+    "is-plain-obj": "^2.0.0"
   },
   "devDependencies": {
-    "@types/is-plain-obj": "^1.1.0",
-    "parcel-bundler": "^1.6.1",
-    "typescript": "^3.2.2"
-  }
+    "parcel-bundler": "^1.12.3",
+    "typescript": "^3.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/etienne-dldc/fragment-proxy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/etienne-dldc/fragment-proxy/issues"
+  },
+  "homepage": "https://github.com/etienne-dldc/fragment-proxy#readme"
 }
